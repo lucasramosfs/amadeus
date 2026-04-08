@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treinador de Acordes</title>
+<style>
+  :root,[data-theme="dark"]{
+    --bg:#0f0f15;--bg2:#1a1a24;--bg3:#222230;
+    --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+    --text:#f0f0f4;--text2:#9090b0;
+    --accent:#7c71e8;--accent2:#5248c0;--orange:#d85a30;--amber:#ba7517;
+    --staff-bg:#1e1b38;--pill-bg:#2a2550;--pill-text:#a9a2f2;
+    --n0:#9a91f0;--n1:#1d9e75;--n2:#e07050;--n3:#d4537e;--n4:#e09530;
+    --staff-line:rgba(150,140,240,0.4);--staff-clef:rgba(154,145,240,0.45);
+  }
+  [data-theme="light"]{
+    --bg:#f4f3fb;--bg2:#ffffff;--bg3:#ededf7;
+    --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+    --text:#1a1a2e;--text2:#606088;
+    --accent:#534AB7;--accent2:#3C3489;--orange:#D85A30;--amber:#BA7517;
+    --staff-bg:#F0EEFF;--pill-bg:#EEEDFE;--pill-text:#3C3489;
+    --n0:#534AB7;--n1:#0F6E56;--n2:#993C1D;--n3:#993556;--n4:#854F0B;
+    --staff-line:rgba(83,74,183,0.35);--staff-clef:rgba(83,74,183,0.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);
+    min-height:100vh;
+    display:flex;flex-direction:column;
+    padding:1.4rem 1rem 0;
+    transition:background .25s,color .25s;
+  }
+  #app{max-width:600px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+  .topbar-left{display:flex;align-items:center;gap:8px}
+  .sax-icon{font-size:22px;line-height:1}
+  h1{font-size:20px;font-weight:500}
+  .theme-btn{
+    display:flex;align-items:center;gap:5px;
+    padding:5px 12px;border-radius:20px;
+    border:1px solid var(--border2);background:var(--bg2);
+    color:var(--text2);font-size:12px;cursor:pointer;transition:background .15s;
+  }
+  .theme-btn:hover{background:var(--bg3)}
+
+  .card{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:14px;padding:1rem 1.1rem;margin-bottom:.8rem;
+    transition:background .25s,border-color .25s;
+  }
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.55rem}
+  .row:last-child{margin-bottom:0}
+  label{font-size:13px;color:var(--text2);min-width:72px}
+  select,input[type=number]{
+    font-size:13px;padding:6px 9px;border-radius:8px;
+    border:1px solid var(--border2);background:var(--bg3);color:var(--text);outline:none;cursor:pointer;
+  }
+  select:focus,input[type=number]:focus{border-color:var(--accent)}
+  input[type=range]{flex:1;min-width:80px;accent-color:var(--accent);cursor:pointer}
+  .time-val{font-size:13px;font-weight:500;min-width:34px}
+
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem}
+  button{
+    padding:7px 18px;border-radius:8px;border:1px solid var(--border2);
+    background:transparent;color:var(--text);font-size:13px;cursor:pointer;
+    transition:background .15s,transform .1s;
+  }
+  button:hover{background:var(--bg3)}
+  button:active{transform:scale(0.97)}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  button.danger{background:var(--orange);color:#fff;border-color:var(--orange)}
+  button.danger:hover{background:#b34a26}
+
+  #chord-display{text-align:center;padding:1.4rem 1rem 1rem}
+  #chord-en{font-size:64px;font-weight:600;letter-spacing:-2px;line-height:1}
+  #chord-pt{font-size:19px;color:var(--text2);margin-bottom:.25rem}
+  #chord-type{font-size:14px;color:var(--text2);margin-bottom:1.25rem}
+
+  #timer-bar-wrap{height:5px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-bottom:.4rem}
+  #timer-bar{height:100%;background:var(--accent);width:100%;transition:width .1s linear,background .4s;border-radius:4px}
+  #timer-num{font-size:12px;color:var(--text2);margin-bottom:1rem}
+
+  .notes-reveal{display:none}
+  .notes-reveal.show{display:block}
+  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+  .note-pill{
+    padding:7px 15px;border-radius:20px;font-size:14px;font-weight:600;
+    background:var(--pill-bg);color:var(--pill-text);
+    min-width:52px;text-align:center;
+    animation:popIn .3s ease both;
+  }
+  .note-pill.tonic{background:var(--accent);color:#fff}
+  .note-pill .role{font-size:9px;opacity:.55;display:block;margin-top:2px;font-weight:400}
+  @keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+  #staff-outer{
+    background:var(--staff-bg);border-radius:10px;
+    padding:.8rem .4rem .55rem;margin-top:.1rem;
+    border:1px solid var(--border2);transition:background .25s;
+  }
+  #staff-label{font-size:11px;color:var(--accent);margin-bottom:.35rem;opacity:.7;letter-spacing:.4px}
+  #staff-svg{width:100%}
+
+  /* reveal timer ring */
+  #reveal-ring-wrap{display:flex;justify-content:center;margin-bottom:.6rem}
+  #reveal-ring-wrap svg{display:block}
+
+  footer{
+    text-align:center;padding:.9rem 1rem 1rem;
+    font-size:11px;color:var(--text2);opacity:.55;
+    margin-top:auto;
+  }
+  footer a{color:inherit;text-decoration:none}
+
+  @media(max-width:440px){
+    #chord-en{font-size:52px}
+    label{min-width:60px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="sax-icon">🎷</span>
+      <h1>Treinador de Acordes</h1>
+    </div>
+    <button class="theme-btn" id="theme-btn">☀️ Claro</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Tempo</label>
+      <input type="range" id="time-range" min="1" max="60" value="10" step="1">
+      <span class="time-val" id="time-label">10s</span>
+      <input type="number" id="time-input" min="1" max="600" value="10" style="width:64px">
+    </div>
+    <div class="row">
+      <label>Modo</label>
+      <select id="mode-select">
+        <option value="all">Todos os acordes</option>
+        <option value="major">Somente maiores</option>
+        <option value="minor">Somente menores</option>
+        <option value="dom7">Dominantes 7ª</option>
+        <option value="manual">Manual</option>
+      </select>
+    </div>
+    <div id="manual-row" class="row" style="display:none">
+      <label>Acorde</label>
+      <select id="root-select"></select>
+      <select id="quality-select"></select>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="btn-play">▶ Iniciar</button>
+      <button class="danger" id="btn-stop" style="display:none">■ Encerrar</button>
+    </div>
+  </div>
+
+  <div class="card" id="chord-display" style="display:none">
+    <div id="chord-en">–</div>
+    <div id="chord-pt"></div>
+    <div id="chord-type"></div>
+    <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
+    <div id="timer-num"></div>
+
+    <div class="notes-reveal" id="notes-reveal">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:.6rem">Composição do acorde:</p>
+      <div id="notes-list"></div>
+
+      <div id="reveal-ring-wrap">
+        <svg id="ring-svg" width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--border2)" stroke-width="4"/>
+          <circle id="ring-arc" cx="28" cy="28" r="22" fill="none"
+            stroke="var(--accent)" stroke-width="4"
+            stroke-dasharray="138.2" stroke-dashoffset="0"
+            stroke-linecap="round" transform="rotate(-90 28 28)"
+            style="transition:stroke-dashoffset .1s linear,stroke .4s"/>
+          <text id="ring-txt" x="28" y="33" text-anchor="middle"
+            font-size="13" font-weight="600" fill="var(--accent)">–</text>
+        </svg>
+      </div>
+
+      <div id="staff-outer">
+        <div id="staff-label">Pentagrama</div>
+        <svg id="staff-svg" viewBox="0 0 420 108"></svg>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<footer>
+  🎷 Criado por <strong>Lucas Ramos Fernandes</strong> &nbsp;·&nbsp;
+  © <span id="yr"></span> Todos os direitos reservados
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_PT={'C':'Dó','C#':'Dó#','D':'Ré','D#':'Ré#','E':'Mi','F':'Fá',
+  'F#':'Fá#','G':'Sol','G#':'Sol#','A':'Lá','A#':'Lá#','B':'Si'};
+const QUALITIES={
+  'major':    {label:'Maior',         intervals:[0,4,7]},
+  'minor':    {label:'Menor',         intervals:[0,3,7]},
+  'dim':      {label:'Diminuto',      intervals:[0,3,6]},
+  'aug':      {label:'Aumentado',     intervals:[0,4,8]},
+  'sus2':     {label:'Sus2',          intervals:[0,2,7]},
+  'sus4':     {label:'Sus4',          intervals:[0,5,7]},
+  'major7':   {label:'Maior 7ª',      intervals:[0,4,7,11]},
+  'minor7':   {label:'Menor 7ª',      intervals:[0,3,7,10]},
+  'dom7':     {label:'Dominante 7ª',  intervals:[0,4,7,10]},
+  'dim7':     {label:'Diminuto 7ª',   intervals:[0,3,6,9]},
+  'half-dim7':{label:'Meio-dim. 7ª',  intervals:[0,3,6,10]},
+  'aug7':     {label:'Aumentado 7ª',  intervals:[0,4,8,10]},
+  'major9':   {label:'Maior 9ª',      intervals:[0,4,7,11,14]},
+  'minor9':   {label:'Menor 9ª',      intervals:[0,3,7,10,14]},
+  'add9':     {label:'Add9',          intervals:[0,4,7,14]},
+  '6':        {label:'6ª maior',      intervals:[0,4,7,9]},
+  'minor6':   {label:'6ª menor',      intervals:[0,3,7,9]}
+};
+const SYMS={'major':'','minor':'m','dim':'°','aug':'+','sus2':'sus2','sus4':'sus4',
+  'major7':'maj7','minor7':'m7','dom7':'7','dim7':'°7','half-dim7':'ø7',
+  'aug7':'+7','major9':'maj9','minor9':'m9','add9':'add9','6':'6','minor6':'m6'};
+const MODE_KEYS={all:Object.keys(QUALITIES),major:['major'],minor:['minor'],dom7:['dom7']};
+const NOTE_Y={'C':82,'C#':82,'D':75,'D#':68,'E':68,'F':61,'F#':55,
+  'G':55,'G#':48,'A':48,'A#':42,'B':35};
+const CIRC=2*Math.PI*22; // ~138.2
+
+let timerA=null, timerB=null, remainA=0, remainB=0;
+let totalTime=10, revealTime=0;
+let currentChord=null, running=false, isDark=true;
+
+const $=id=>document.getElementById(id);
+
+/* ---- theme ---- */
+$('theme-btn').onclick=function(){
+  isDark=!isDark;
+  document.documentElement.dataset.theme=isDark?'dark':'light';
+  this.textContent=isDark?'☀️ Claro':'🌙 Escuro';
+  if(currentChord&&$('notes-reveal').classList.contains('show'))
+    drawStaff(chordNotes(currentChord.root,currentChord.qual));
+};
+
+/* ---- selects ---- */
+const rootSel=$('root-select'), qualSel=$('quality-select');
+NOTES.forEach(n=>{
+  const o=document.createElement('option');
+  o.value=n; o.textContent=n+' — '+NOTE_PT[n];
+  rootSel.appendChild(o);
+});
+Object.entries(QUALITIES).forEach(([k,v])=>{
+  const o=document.createElement('option');
+  o.value=k; o.textContent=v.label;
+  qualSel.appendChild(o);
+});
+
+$('time-range').oninput=function(){$('time-label').textContent=this.value+'s';$('time-input').value=this.value};
+$('time-input').oninput=function(){
+  let v=Math.max(1,Math.min(600,parseInt(this.value)||1));
+  $('time-range').value=Math.min(v,60);
+  $('time-label').textContent=v+'s';
+};
+$('mode-select').onchange=function(){
+  $('manual-row').style.display=this.value==='manual'?'flex':'none';
+};
+
+/* ---- chord logic ---- */
+function pickChord(){
+  const mode=$('mode-select').value;
+  if(mode==='manual') return{root:rootSel.value,qual:qualSel.value};
+  const keys=MODE_KEYS[mode]||MODE_KEYS.all;
+  return{root:NOTES[Math.floor(Math.random()*12)],
+         qual:keys[Math.floor(Math.random()*keys.length)]};
+}
+function chordNotes(root,qual){
+  const ri=NOTES.indexOf(root);
+  return QUALITIES[qual].intervals.map(i=>NOTES[(ri+i)%12]);
+}
+
+/* ---- staff ---- */
+function drawStaff(notes){
+  const svg=$('staff-svg'); svg.innerHTML='';
+  const mL=38, sp=50;
+  const lc=isDark?'rgba(150,140,240,0.4)':'rgba(83,74,183,0.35)';
+  const nc=isDark?['#9a91f0','#1d9e75','#e07050','#d4537e','#e09530']
+                 :['#534AB7','#0F6E56','#993C1D','#993556','#854F0B'];
+  const cc=isDark?'rgba(154,145,240,0.45)':'rgba(83,74,183,0.4)';
+  function el(tag,attrs){
+    const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+    Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+    return e;
+  }
+  [20,33,46,59,72].forEach(y=>svg.appendChild(el('line',{x1:mL,y1:y,x2:415,y2:y,stroke:lc,'stroke-width':'1.2'})));
+  notes.forEach((n,i)=>{
+    const x=mL+28+i*sp, y=NOTE_Y[n]||50, c=nc[i%nc.length];
+    if(y>=80) svg.appendChild(el('line',{x1:x-13,y1:82,x2:x+13,y2:82,stroke:lc,'stroke-width':'1.2'}));
+    svg.appendChild(el('ellipse',{cx:x,cy:y,rx:10,ry:7,fill:c}));
+    svg.appendChild(el('line',{x1:x+9,y1:y,x2:x+9,y2:y-30,stroke:c,'stroke-width':'1.5'}));
+    const t=el('text',{x,y:y+24,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:c});
+    t.textContent=n; svg.appendChild(t);
+  });
+  const clef=el('text',{x:mL-22,y:62,'font-size':'46',fill:cc});
+  clef.textContent='𝄞'; svg.appendChild(clef);
+}
+
+/* ---- display chord ---- */
+function showChord(chord){
+  currentChord=chord;
+  const sym=SYMS[chord.qual];
+  $('chord-en').innerHTML=chord.root+
+    '<sup style="font-size:26px;vertical-align:super;color:var(--accent)">'+sym+'</sup>';
+  $('chord-pt').textContent=NOTE_PT[chord.root]+(sym?' '+sym:'');
+  $('chord-type').textContent=QUALITIES[chord.qual].label;
+  $('notes-reveal').classList.remove('show');
+  $('chord-display').style.display='block';
+  $('timer-bar').style.width='100%';
+  $('timer-bar').style.background='var(--accent)';
+  $('ring-arc').style.strokeDashoffset='0';
+  $('ring-arc').style.stroke='var(--accent)';
+  $('ring-txt').textContent='–';
+}
+
+/* ---- countdown A: learning time ---- */
+function startLearnTimer(){
+  totalTime=Math.max(1,parseInt($('time-input').value)||10);
+  remainA=totalTime;
+  updateLearnBar(remainA);
+  clearInterval(timerA);
+  timerA=setInterval(()=>{
+    remainA-=0.1;
+    updateLearnBar(remainA);
+    if(remainA<=0){
+      clearInterval(timerA);
+      $('timer-num').textContent='';
+      revealAndStartRevealTimer();
+    }
+  },100);
+}
+
+function updateLearnBar(r){
+  const pct=Math.max(0,r/totalTime)*100;
+  $('timer-bar').style.width=pct+'%';
+  $('timer-num').textContent=Math.ceil(Math.max(0,r))+'s';
+  if(r<=totalTime*0.4) $('timer-bar').style.background='var(--orange)';
+  else if(r<=totalTime*0.6) $('timer-bar').style.background='var(--amber)';
+}
+
+/* ---- reveal + countdown B: reveal time (same duration) ---- */
+function revealAndStartRevealTimer(){
+  // build notes pills
+  const notes=chordNotes(currentChord.root,currentChord.qual);
+  const nl=$('notes-list'); nl.innerHTML='';
+  const roles=['Tônica','3ª','5ª','7ª','9ª','11ª','13ª'];
+  notes.forEach((n,i)=>{
+    const pill=document.createElement('div');
+    pill.className='note-pill'+(i===0?' tonic':'');
+    pill.style.animationDelay=(i*0.07)+'s';
+    pill.innerHTML=n+'<span class="role">'+roles[i]+'</span>';
+    nl.appendChild(pill);
+  });
+  drawStaff(notes);
+  $('notes-reveal').classList.add('show');
+
+  // ring countdown
+  revealTime=totalTime;
+  remainB=revealTime;
+  updateRing(remainB);
+  clearInterval(timerB);
+  timerB=setInterval(()=>{
+    remainB-=0.1;
+    updateRing(remainB);
+    if(remainB<=0){
+      clearInterval(timerB);
+      if(running) nextChord();
+    }
+  },100);
+}
+
+function updateRing(r){
+  const pct=Math.max(0,r/revealTime);
+  const offset=CIRC*(1-pct);
+  $('ring-arc').style.strokeDashoffset=offset;
+  $('ring-txt').textContent=Math.ceil(Math.max(0,r));
+  if(r<=revealTime*0.4) $('ring-arc').style.stroke='var(--orange)';
+  else if(r<=revealTime*0.6) $('ring-arc').style.stroke='var(--amber)';
+  else $('ring-arc').style.stroke='var(--accent)';
+}
+
+function nextChord(){
+  showChord(pickChord());
+  startLearnTimer();
+}
+
+/* ---- buttons ---- */
+$('btn-play').onclick=function(){
+  running=true;
+  this.style.display='none';
+  $('btn-stop').style.display='';
+  nextChord();
+};
+
+$('btn-stop').onclick=function(){
+  running=false;
+  clearInterval(timerA); clearInterval(timerB);
+  $('chord-display').style.display='none';
+  $('btn-play').style.display='';
+  this.style.display='none';
+};
+</script>
+</body>
+</html>
