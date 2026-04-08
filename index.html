@@ -87,15 +87,15 @@
 
   .notes-reveal{display:none}
   .notes-reveal.show{display:block}
-  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
   .note-pill{
-    padding:7px 15px;border-radius:20px;font-size:14px;font-weight:600;
+    padding:7px 15px;border-radius:20px;font-size:20px;font-weight:600;
     background:var(--pill-bg);color:var(--pill-text);
-    min-width:52px;text-align:center;
+    min-width:18%;text-align:center;
     animation:popIn .3s ease both;
   }
   .note-pill.tonic{background:var(--accent);color:#fff}
-  .note-pill .role{font-size:9px;opacity:.55;display:block;margin-top:2px;font-weight:400}
+  .note-pill .role{font-size:15px;opacity:.55;display:block;margin-top:2px;font-weight:500}
   @keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 
   #staff-outer{
@@ -354,29 +354,34 @@ function updateLearnBar(r){
 
 /* ---- reveal + countdown B: reveal time (same duration) ---- */
 function revealAndStartRevealTimer(){
-  // build notes pills
   const notes=chordNotes(currentChord.root,currentChord.qual);
-  const nl=$('notes-list'); nl.innerHTML='';
+  const nl=document.getElementById('notes-list');
+  nl.innerHTML='';
+
   const roles=['Tônica','3ª','5ª','7ª','9ª','11ª','13ª'];
+
   notes.forEach((n,i)=>{
     const pill=document.createElement('div');
     pill.className='note-pill'+(i===0?' tonic':'');
-    pill.style.animationDelay=(i*0.07)+'s';
     pill.innerHTML=n+'<span class="role">'+roles[i]+'</span>';
     nl.appendChild(pill);
   });
-  drawStaff(notes);
-  $('notes-reveal').classList.add('show');
 
-  // ring countdown
-  revealTime=totalTime;
-  remainB=revealTime;
+  drawStaff(notes);
+  document.getElementById('notes-reveal').classList.add('show');
+
+  /* ⬇️ NOVO TEMPO DIFERENTE */
+  revealTime = Math.max(2, totalTime / 2); // metade do tempo principal
+  remainB = revealTime;
+
   updateRing(remainB);
+
   clearInterval(timerB);
-  timerB=setInterval(()=>{
-    remainB-=0.1;
+  timerB = setInterval(()=>{
+    remainB -= 0.1;
     updateRing(remainB);
-    if(remainB<=0){
+
+    if(remainB <= 0){
       clearInterval(timerB);
       if(running) nextChord();
     }
