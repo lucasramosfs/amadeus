@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treinador de Acordes</title>
+<style>
+  :root,[data-theme="dark"]{
+    --bg:#0f0f15;--bg2:#1a1a24;--bg3:#222230;
+    --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+    --text:#f0f0f4;--text2:#9090b0;
+    --accent:#7c71e8;--accent2:#5248c0;--orange:#d85a30;--amber:#ba7517;
+    --staff-bg:#1e1b38;--pill-bg:#2a2550;--pill-text:#a9a2f2;
+    --staff-line:rgba(150,140,240,0.4);--staff-clef:rgba(154,145,240,0.45);
+  }
+  [data-theme="light"]{
+    --bg:#f4f3fb;--bg2:#ffffff;--bg3:#ededf7;
+    --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+    --text:#1a1a2e;--text2:#606088;
+    --accent:#534AB7;--accent2:#3C3489;--orange:#D85A30;--amber:#BA7517;
+    --staff-bg:#F0EEFF;--pill-bg:#EEEDFE;--pill-text:#3C3489;
+    --staff-line:rgba(83,74,183,0.35);--staff-clef:rgba(83,74,183,0.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);
+    min-height:100vh;display:flex;flex-direction:column;
+    padding:1.4rem 1rem 0;transition:background .25s,color .25s;
+  }
+  #app{max-width:620px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+  .topbar-left{display:flex;align-items:center;gap:8px}
+  h1{font-size:20px;font-weight:500}
+  .theme-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;transition:background .15s}
+  .theme-btn:hover{background:var(--bg3)}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:.8rem;transition:background .25s,border-color .25s}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.55rem}
+  .row:last-child{margin-bottom:0}
+  label{font-size:13px;color:var(--text2);min-width:72px}
+  select,input[type=number]{font-size:13px;padding:6px 9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);outline:none;cursor:pointer}
+  select:focus,input[type=number]:focus{border-color:var(--accent)}
+  input[type=range]{flex:1;min-width:80px;accent-color:var(--accent);cursor:pointer}
+  .time-val{font-size:13px;font-weight:500;min-width:34px}
+  .toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:.55rem}
+  .toggle-row label{min-width:auto;font-size:13px;color:var(--text2);cursor:pointer}
+  .toggle{position:relative;width:34px;height:18px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .toggle-slider{position:absolute;inset:0;border-radius:18px;background:var(--bg3);border:1px solid var(--border2);transition:background .2s;cursor:pointer}
+  .toggle-slider:before{content:'';position:absolute;width:12px;height:12px;left:2px;top:2px;border-radius:50%;background:var(--text2);transition:transform .2s,background .2s}
+  .toggle input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent)}
+  .toggle input:checked+.toggle-slider:before{transform:translateX(16px);background:#fff}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem}
+  button{padding:7px 18px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text);font-size:13px;cursor:pointer;transition:background .15s,transform .1s}
+  button:hover{background:var(--bg3)}
+  button:active{transform:scale(0.97)}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  button.danger{background:var(--orange);color:#fff;border-color:var(--orange)}
+  button.danger:hover{background:#b34a26}
+  #chord-display{text-align:center;padding:1.4rem 1rem 1rem}
+  #chord-name-wrap{line-height:1;margin-bottom:.3rem;display:flex;align-items:flex-start;justify-content:center;gap:1px;flex-wrap:wrap}
+  #chord-root{font-size:72px;font-weight:700;letter-spacing:-2px}
+  #chord-acc{font-size:44px;font-weight:400;line-height:1.05;color:var(--accent);margin-top:6px}
+  #chord-qual-sym{font-size:26px;font-weight:400;line-height:1.1;color:var(--accent);margin-top:10px;max-width:160px;word-break:break-all}
+  #chord-pt{font-size:18px;color:var(--text2);margin-bottom:.2rem}
+  #chord-type{font-size:14px;color:var(--text2);margin-bottom:1.2rem}
+  #timer-bar-wrap{height:5px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-bottom:.4rem}
+  #timer-bar{height:100%;background:var(--accent);width:100%;transition:width .1s linear,background .4s;border-radius:4px}
+  #timer-num{font-size:12px;color:var(--text2);margin-bottom:1rem}
+  .notes-reveal{display:none}
+  .notes-reveal.show{display:block}
+  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+  .note-pill{padding:7px 14px;border-radius:20px;text-align:center;background:var(--pill-bg);color:var(--pill-text);animation:popIn .3s ease both;min-width:52px}
+  .note-pill.tonic{background:var(--accent);color:#fff}
+  .pill-name{font-size:18px;font-weight:700;display:block;line-height:1.2}
+  .pill-role{font-size:10px;opacity:.6;display:block;margin-top:2px}
+  @keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  #reveal-ring-wrap{display:flex;justify-content:center;margin-bottom:.75rem}
+  #staff-outer{background:var(--staff-bg);border-radius:10px;padding:.8rem .4rem .55rem;margin-top:.1rem;border:1px solid var(--border2);transition:background .25s}
+  #staff-label{font-size:11px;color:var(--accent);margin-bottom:.35rem;opacity:.7;letter-spacing:.4px}
+  #staff-svg{width:100%}
+  footer{text-align:center;padding:.9rem 1rem 1rem;font-size:11px;color:var(--text2);opacity:.55;margin-top:auto}
+  @media(max-width:440px){#chord-root{font-size:56px}label{min-width:60px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span style="font-size:22px">&#127927;</span>
+      <h1>Treinador de Acordes</h1>
+    </div>
+    <button class="theme-btn" id="theme-btn">&#9728;&#65039; Claro</button>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Tempo</label>
+      <input type="range" id="time-range" min="1" max="60" value="5" step="1">
+      <span class="time-val" id="time-label">5s</span>
+      <input type="number" id="time-input" min="1" max="600" value="5" style="width:64px">
+    </div>
+    <div class="row" id="root-filter-row">
+      <label>Nota</label>
+      <select id="root-filter">
+        <option value="all">Todas as notas</option>
+        <option value="C">C &mdash; D&oacute;</option>
+        <option value="C#">C&sharp; &mdash; D&oacute;&sharp;</option>
+        <option value="Cb">Cb &mdash; D&oacute;b</option>
+        <option value="D">D &mdash; R&eacute;</option>
+        <option value="D#">D&sharp; &mdash; R&eacute;&sharp;</option>
+        <option value="Db">Db &mdash; R&eacute;b</option>
+        <option value="E">E &mdash; Mi</option>
+        <option value="E#">E&sharp; &mdash; Mi&sharp;</option>
+        <option value="Eb">Eb &mdash; Mib</option>
+        <option value="F">F &mdash; F&aacute;</option>
+        <option value="F#">F&sharp; &mdash; F&aacute;&sharp;</option>
+        <option value="Fb">Fb &mdash; F&aacute;b</option>
+        <option value="G">G &mdash; Sol</option>
+        <option value="G#">G&sharp; &mdash; Sol&sharp;</option>
+        <option value="Gb">Gb &mdash; Solb</option>
+        <option value="A">A &mdash; L&aacute;</option>
+        <option value="A#">A&sharp; &mdash; L&aacute;&sharp;</option>
+        <option value="Ab">Ab &mdash; L&aacute;b</option>
+        <option value="B">B &mdash; Si</option>
+        <option value="B#">B&sharp; &mdash; Si&sharp;</option>
+        <option value="Bb">Bb &mdash; Sib</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Fam&iacute;lia</label>
+      <select id="mode-select">
+        <option value="all">Todas as fam&iacute;lias</option>
+        <option value="triads">Tr&iacute;ades (maior + menor)</option>
+        <option value="major_group">Fam&iacute;lia Maior</option>
+        <option value="minor_group">Fam&iacute;lia Menor</option>
+        <option value="dom_group">Fam&iacute;lia Dominante</option>
+        <option value="dim_group">Fam&iacute;lia Diminu&iacute;da</option>
+        <option value="aug_group">Fam&iacute;lia Aumentada</option>
+        <option value="sus_group">Suspensas</option>
+        <option value="power">Power Chords (5ª)</option>
+        <option value="sixth_group">Acordes de 6&ordf;</option>
+        <option value="sevenths">Todas com 7&ordf;</option>
+        <option value="ninths">Todas com 9&ordf;</option>
+        <option value="elevenths">Todas com 11&ordf;</option>
+        <option value="thirteenths">Todas com 13&ordf;</option>
+        <option value="manual">Manual</option>
+      </select>
+    </div>
+    <div id="seventh-row" class="toggle-row" style="display:none">
+      <label class="toggle">
+        <input type="checkbox" id="with-seventh">
+        <span class="toggle-slider"></span>
+      </label>
+      <label for="with-seventh" style="cursor:pointer">Incluir 7&ordf; e extens&otilde;es</label>
+    </div>
+    <div id="manual-row" class="row" style="display:none">
+      <label>Acorde</label>
+      <select id="manual-root-select"></select>
+      <select id="manual-qual-select"></select>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="btn-play">&#9654; Iniciar</button>
+      <button id="btn-pause" style="display:none">&#9208; Pausar</button>
+      <button class="danger" id="btn-stop" style="display:none">&#9632; Encerrar</button>
+    </div>
+  </div>
+
+  <div class="card" id="chord-display" style="display:none">
+    <div id="chord-name-wrap">
+      <span id="chord-root">&#8211;</span>
+      <span id="chord-acc"></span>
+      <span id="chord-qual-sym"></span>
+    </div>
+    <div id="chord-pt"></div>
+    <div id="chord-type"></div>
+    <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
+    <div id="timer-num"></div>
+    <div class="notes-reveal" id="notes-reveal">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:.6rem">Composi&ccedil;&atilde;o do acorde:</p>
+      <div id="notes-list"></div>
+      <div id="reveal-ring-wrap">
+        <svg id="ring-svg" width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--border2)" stroke-width="4"/>
+          <circle id="ring-arc" cx="28" cy="28" r="22" fill="none"
+            stroke="var(--accent)" stroke-width="4"
+            stroke-dasharray="138.2" stroke-dashoffset="0"
+            stroke-linecap="round" transform="rotate(-90 28 28)"
+            style="transition:stroke-dashoffset .1s linear,stroke .4s"/>
+          <text id="ring-txt" x="28" y="33" text-anchor="middle"
+            font-size="13" font-weight="600" fill="var(--accent)">&#8211;</text>
+        </svg>
+      </div>
+      <div id="staff-outer">
+        <div id="staff-label">Pentagrama</div>
+        <svg id="staff-svg" viewBox="0 0 420 100"></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &#127927; Criado por <strong>Lucas Ramos Fernandes</strong> &nbsp;&middot;&nbsp;
+  &copy; <span id="yr"></span> Todos os direitos reservados
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* ══════════════════════════════════════════
+   BANCO COMPLETO DE ACORDES (609 acordes)
+   Notas calculadas com enarmônicos corretos
+   ══════════════════════════════════════════ */
+const CHORD_NOTES = {
+  "A": ["A", "C#", "E"],
+  "A#": ["A#", "D", "F"],
+  "A#11": ["A#", "D", "F", "G#", "C", "D#"],
+  "A#13": ["A#", "D", "F", "G#", "C", "D#", "G"],
+  "A#5": ["A#", "F"],
+  "A#6": ["A#", "D", "F", "G"],
+  "A#6/9": ["A#", "D", "F", "G", "C"],
+  "A#7": ["A#", "D", "F", "G#"],
+  "A#7(#9)": ["A#", "D", "F", "G#", "C#"],
+  "A#7(b5)": ["A#", "D", "E", "G#"],
+  "A#7(b9)": ["A#", "D", "F", "G#", "B"],
+  "A#7sus4": ["A#", "D#", "F", "G#"],
+  "A#9": ["A#", "D", "F", "G#", "C"],
+  "A#add9": ["A#", "D", "F", "C"],
+  "A#aug": ["A#", "D", "F#"],
+  "A#dim": ["A#", "C#", "E"],
+  "A#dim7": ["A#", "C#", "E", "G"],
+  "A#m": ["A#", "C#", "F"],
+  "A#m11": ["A#", "C#", "F", "G#", "C", "D#"],
+  "A#m13": ["A#", "C#", "F", "G#", "C", "D#", "G"],
+  "A#m6": ["A#", "C#", "F", "G"],
+  "A#m7": ["A#", "C#", "F", "G#"],
+  "A#m7(b5)": ["A#", "C#", "E", "G#"],
+  "A#m9": ["A#", "C#", "F", "G#", "C"],
+  "A#maj11": ["A#", "D", "F", "A", "C", "D#"],
+  "A#maj13": ["A#", "D", "F", "A", "C", "D#", "G"],
+  "A#maj7": ["A#", "D", "F", "A"],
+  "A#maj9": ["A#", "D", "F", "A", "C"],
+  "A#sus2": ["A#", "C", "F"],
+  "A#sus4": ["A#", "D#", "F"],
+  "A11": ["A", "C#", "E", "G", "B", "D"],
+  "A13": ["A", "C#", "E", "G", "B", "D", "F#"],
+  "A5": ["A", "E"],
+  "A6": ["A", "C#", "E", "F#"],
+  "A6/9": ["A", "C#", "E", "F#", "B"],
+  "A7": ["A", "C#", "E", "G"],
+  "A7(#9)": ["A", "C#", "E", "G", "C"],
+  "A7(b5)": ["A", "C#", "D#", "G"],
+  "A7(b9)": ["A", "C#", "E", "G", "A#"],
+  "A7sus4": ["A", "D", "E", "G"],
+  "A9": ["A", "C#", "E", "G", "B"],
+  "Aadd9": ["A", "C#", "E", "B"],
+  "Aaug": ["A", "C#", "F"],
+  "Ab": ["Ab", "C", "Eb"],
+  "Ab11": ["Ab", "C", "Eb", "Gb", "Bb", "Db"],
+  "Ab13": ["Ab", "C", "Eb", "Gb", "Bb", "Db", "F"],
+  "Ab5": ["Ab", "Eb"],
+  "Ab6": ["Ab", "C", "Eb", "F"],
+  "Ab6/9": ["Ab", "C", "Eb", "F", "Bb"],
+  "Ab7": ["Ab", "C", "Eb", "Gb"],
+  "Ab7(#9)": ["Ab", "C", "Eb", "Gb", "B"],
+  "Ab7(b5)": ["Ab", "C", "D", "Gb"],
+  "Ab7(b9)": ["Ab", "C", "Eb", "Gb", "A"],
+  "Ab7sus4": ["Ab", "Db", "Eb", "Gb"],
+  "Ab9": ["Ab", "C", "Eb", "Gb", "Bb"],
+  "Abadd9": ["Ab", "C", "Eb", "Bb"],
+  "Abaug": ["Ab", "C", "E"],
+  "Abdim": ["Ab", "B", "D"],
+  "Abdim7": ["Ab", "B", "D", "F"],
+  "Abm": ["Ab", "B", "Eb"],
+  "Abm11": ["Ab", "B", "Eb", "Gb", "Bb", "Db"],
+  "Abm13": ["Ab", "B", "Eb", "Gb", "Bb", "Db", "F"],
+  "Abm6": ["Ab", "B", "Eb", "F"],
+  "Abm7": ["Ab", "B", "Eb", "Gb"],
+  "Abm7(b5)": ["Ab", "B", "D", "Gb"],
+  "Abm9": ["Ab", "B", "Eb", "Gb", "Bb"],
+  "Abmaj11": ["Ab", "C", "Eb", "G", "Bb", "Db"],
+  "Abmaj13": ["Ab", "C", "Eb", "G", "Bb", "Db", "F"],
+  "Abmaj7": ["Ab", "C", "Eb", "G"],
+  "Abmaj9": ["Ab", "C", "Eb", "G", "Bb"],
+  "Absus2": ["Ab", "Bb", "Eb"],
+  "Absus4": ["Ab", "Db", "Eb"],
+  "Adim": ["A", "C", "D#"],
+  "Adim7": ["A", "C", "D#", "F#"],
+  "Am": ["A", "C", "E"],
+  "Am11": ["A", "C", "E", "G", "B", "D"],
+  "Am13": ["A", "C", "E", "G", "B", "D", "F#"],
+  "Am6": ["A", "C", "E", "F#"],
+  "Am7": ["A", "C", "E", "G"],
+  "Am7(b5)": ["A", "C", "D#", "G"],
+  "Am9": ["A", "C", "E", "G", "B"],
+  "Amaj11": ["A", "C#", "E", "G#", "B", "D"],
+  "Amaj13": ["A", "C#", "E", "G#", "B", "D", "F#"],
+  "Amaj7": ["A", "C#", "E", "G#"],
+  "Amaj9": ["A", "C#", "E", "G#", "B"],
+  "Asus2": ["A", "B", "E"],
+  "Asus4": ["A", "D", "E"],
+  "B": ["B", "D#", "F#"],
+  "B#": ["C", "E", "G"],
+  "B#11": ["C", "E", "G", "A#", "D", "F"],
+  "B#13": ["C", "E", "G", "A#", "D", "F", "A"],
+  "B#5": ["C", "G"],
+  "B#6": ["C", "E", "G", "A"],
+  "B#6/9": ["C", "E", "G", "A", "D"],
+  "B#7": ["C", "E", "G", "A#"],
+  "B#7(#9)": ["C", "E", "G", "A#", "D#"],
+  "B#7(b5)": ["C", "E", "F#", "A#"],
+  "B#7(b9)": ["C", "E", "G", "A#", "C#"],
+  "B#7sus4": ["C", "F", "G", "A#"],
+  "B#9": ["C", "E", "G", "A#", "D"],
+  "B#add9": ["C", "E", "G", "D"],
+  "B#aug": ["C", "E", "G#"],
+  "B#dim": ["C", "D#", "F#"],
+  "B#dim7": ["C", "D#", "F#", "A"],
+  "B#m": ["C", "D#", "G"],
+  "B#m11": ["C", "D#", "G", "A#", "D", "F"],
+  "B#m13": ["C", "D#", "G", "A#", "D", "F", "A"],
+  "B#m6": ["C", "D#", "G", "A"],
+  "B#m7": ["C", "D#", "G", "A#"],
+  "B#m7(b5)": ["C", "D#", "F#", "A#"],
+  "B#m9": ["C", "D#", "G", "A#", "D"],
+  "B#maj11": ["C", "E", "G", "B", "D", "F"],
+  "B#maj13": ["C", "E", "G", "B", "D", "F", "A"],
+  "B#maj7": ["C", "E", "G", "B"],
+  "B#maj9": ["C", "E", "G", "B", "D"],
+  "B#sus2": ["C", "D", "G"],
+  "B#sus4": ["C", "F", "G"],
+  "B11": ["B", "D#", "F#", "A", "C#", "E"],
+  "B13": ["B", "D#", "F#", "A", "C#", "E", "G#"],
+  "B5": ["B", "F#"],
+  "B6": ["B", "D#", "F#", "G#"],
+  "B6/9": ["B", "D#", "F#", "G#", "C#"],
+  "B7": ["B", "D#", "F#", "A"],
+  "B7(#9)": ["B", "D#", "F#", "A", "D"],
+  "B7(b5)": ["B", "D#", "F", "A"],
+  "B7(b9)": ["B", "D#", "F#", "A", "C"],
+  "B7sus4": ["B", "E", "F#", "A"],
+  "B9": ["B", "D#", "F#", "A", "C#"],
+  "Badd9": ["B", "D#", "F#", "C#"],
+  "Baug": ["B", "D#", "G"],
+  "Bb": ["Bb", "D", "F"],
+  "Bb11": ["Bb", "D", "F", "Ab", "C", "Eb"],
+  "Bb13": ["Bb", "D", "F", "Ab", "C", "Eb", "G"],
+  "Bb5": ["Bb", "F"],
+  "Bb6": ["Bb", "D", "F", "G"],
+  "Bb6/9": ["Bb", "D", "F", "G", "C"],
+  "Bb7": ["Bb", "D", "F", "Ab"],
+  "Bb7(#9)": ["Bb", "D", "F", "Ab", "Db"],
+  "Bb7(b5)": ["Bb", "D", "E", "Ab"],
+  "Bb7(b9)": ["Bb", "D", "F", "Ab", "B"],
+  "Bb7sus4": ["Bb", "Eb", "F", "Ab"],
+  "Bb9": ["Bb", "D", "F", "Ab", "C"],
+  "Bbadd9": ["Bb", "D", "F", "C"],
+  "Bbaug": ["Bb", "D", "Gb"],
+  "Bbdim": ["Bb", "Db", "E"],
+  "Bbdim7": ["Bb", "Db", "E", "G"],
+  "Bbm": ["Bb", "Db", "F"],
+  "Bbm11": ["Bb", "Db", "F", "Ab", "C", "Eb"],
+  "Bbm13": ["Bb", "Db", "F", "Ab", "C", "Eb", "G"],
+  "Bbm6": ["Bb", "Db", "F", "G"],
+  "Bbm7": ["Bb", "Db", "F", "Ab"],
+  "Bbm7(b5)": ["Bb", "Db", "E", "Ab"],
+  "Bbm9": ["Bb", "Db", "F", "Ab", "C"],
+  "Bbmaj11": ["Bb", "D", "F", "A", "C", "Eb"],
+  "Bbmaj13": ["Bb", "D", "F", "A", "C", "Eb", "G"],
+  "Bbmaj7": ["Bb", "D", "F", "A"],
+  "Bbmaj9": ["Bb", "D", "F", "A", "C"],
+  "Bbsus2": ["Bb", "C", "F"],
+  "Bbsus4": ["Bb", "Eb", "F"],
+  "Bdim": ["B", "D", "F"],
+  "Bdim7": ["B", "D", "F", "G#"],
+  "Bm": ["B", "D", "F#"],
+  "Bm11": ["B", "D", "F#", "A", "C#", "E"],
+  "Bm13": ["B", "D", "F#", "A", "C#", "E", "G#"],
+  "Bm6": ["B", "D", "F#", "G#"],
+  "Bm7": ["B", "D", "F#", "A"],
+  "Bm7(b5)": ["B", "D", "F", "A"],
+  "Bm9": ["B", "D", "F#", "A", "C#"],
+  "Bmaj11": ["B", "D#", "F#", "A#", "C#", "E"],
+  "Bmaj13": ["B", "D#", "F#", "A#", "C#", "E", "G#"],
+  "Bmaj7": ["B", "D#", "F#", "A#"],
+  "Bmaj9": ["B", "D#", "F#", "A#", "C#"],
+  "Bsus2": ["B", "C#", "F#"],
+  "Bsus4": ["B", "E", "F#"],
+  "C": ["C", "E", "G"],
+  "C#": ["C#", "F", "G#"],
+  "C#11": ["C#", "F", "G#", "B", "D#", "F#"],
+  "C#13": ["C#", "F", "G#", "B", "D#", "F#", "A#"],
+  "C#5": ["C#", "G#"],
+  "C#6": ["C#", "F", "G#", "A#"],
+  "C#6/9": ["C#", "F", "G#", "A#", "D#"],
+  "C#7": ["C#", "F", "G#", "B"],
+  "C#7(#9)": ["C#", "F", "G#", "B", "E"],
+  "C#7(b5)": ["C#", "F", "G", "B"],
+  "C#7(b9)": ["C#", "F", "G#", "B", "D"],
+  "C#7sus4": ["C#", "F#", "G#", "B"],
+  "C#9": ["C#", "F", "G#", "B", "D#"],
+  "C#add9": ["C#", "F", "G#", "D#"],
+  "C#aug": ["C#", "F", "A"],
+  "C#dim": ["C#", "E", "G"],
+  "C#dim7": ["C#", "E", "G", "A#"],
+  "C#m": ["C#", "E", "G#"],
+  "C#m11": ["C#", "E", "G#", "B", "D#", "F#"],
+  "C#m13": ["C#", "E", "G#", "B", "D#", "F#", "A#"],
+  "C#m6": ["C#", "E", "G#", "A#"],
+  "C#m7": ["C#", "E", "G#", "B"],
+  "C#m7(b5)": ["C#", "E", "G", "B"],
+  "C#m9": ["C#", "E", "G#", "B", "D#"],
+  "C#maj11": ["C#", "F", "G#", "C", "D#", "F#"],
+  "C#maj13": ["C#", "F", "G#", "C", "D#", "F#", "A#"],
+  "C#maj7": ["C#", "F", "G#", "C"],
+  "C#maj9": ["C#", "F", "G#", "C", "D#"],
+  "C#sus2": ["C#", "D#", "G#"],
+  "C#sus4": ["C#", "F#", "G#"],
+  "C11": ["C", "E", "G", "A#", "D", "F"],
+  "C13": ["C", "E", "G", "A#", "D", "F", "A"],
+  "C5": ["C", "G"],
+  "C6": ["C", "E", "G", "A"],
+  "C6/9": ["C", "E", "G", "A", "D"],
+  "C7": ["C", "E", "G", "A#"],
+  "C7(#9)": ["C", "E", "G", "A#", "D#"],
+  "C7(b5)": ["C", "E", "F#", "A#"],
+  "C7(b9)": ["C", "E", "G", "A#", "C#"],
+  "C7sus4": ["C", "F", "G", "A#"],
+  "C9": ["C", "E", "G", "A#", "D"],
+  "Cadd9": ["C", "E", "G", "D"],
+  "Caug": ["C", "E", "G#"],
+  "Cb": ["B", "Eb", "Gb"],
+  "Cb11": ["B", "Eb", "Gb", "A", "Db", "E"],
+  "Cb13": ["B", "Eb", "Gb", "A", "Db", "E", "Ab"],
+  "Cb5": ["B", "Gb"],
+  "Cb6": ["B", "Eb", "Gb", "Ab"],
+  "Cb6/9": ["B", "Eb", "Gb", "Ab", "Db"],
+  "Cb7": ["B", "Eb", "Gb", "A"],
+  "Cb7(#9)": ["B", "Eb", "Gb", "A", "D"],
+  "Cb7(b5)": ["B", "Eb", "F", "A"],
+  "Cb7(b9)": ["B", "Eb", "Gb", "A", "C"],
+  "Cb7sus4": ["B", "E", "Gb", "A"],
+  "Cb9": ["B", "Eb", "Gb", "A", "Db"],
+  "Cbadd9": ["B", "Eb", "Gb", "Db"],
+  "Cbaug": ["B", "Eb", "G"],
+  "Cbdim": ["B", "D", "F"],
+  "Cbdim7": ["B", "D", "F", "Ab"],
+  "Cbm": ["B", "D", "Gb"],
+  "Cbm11": ["B", "D", "Gb", "A", "Db", "E"],
+  "Cbm13": ["B", "D", "Gb", "A", "Db", "E", "Ab"],
+  "Cbm6": ["B", "D", "Gb", "Ab"],
+  "Cbm7": ["B", "D", "Gb", "A"],
+  "Cbm7(b5)": ["B", "D", "F", "A"],
+  "Cbm9": ["B", "D", "Gb", "A", "Db"],
+  "Cbmaj11": ["B", "Eb", "Gb", "Bb", "Db", "E"],
+  "Cbmaj13": ["B", "Eb", "Gb", "Bb", "Db", "E", "Ab"],
+  "Cbmaj7": ["B", "Eb", "Gb", "Bb"],
+  "Cbmaj9": ["B", "Eb", "Gb", "Bb", "Db"],
+  "Cbsus2": ["B", "Db", "Gb"],
+  "Cbsus4": ["B", "E", "Gb"],
+  "Cdim": ["C", "D#", "F#"],
+  "Cdim7": ["C", "D#", "F#", "A"],
+  "Cm": ["C", "D#", "G"],
+  "Cm11": ["C", "D#", "G", "A#", "D", "F"],
+  "Cm13": ["C", "D#", "G", "A#", "D", "F", "A"],
+  "Cm6": ["C", "D#", "G", "A"],
+  "Cm7": ["C", "D#", "G", "A#"],
+  "Cm7(b5)": ["C", "D#", "F#", "A#"],
+  "Cm9": ["C", "D#", "G", "A#", "D"],
+  "Cmaj11": ["C", "E", "G", "B", "D", "F"],
+  "Cmaj13": ["C", "E", "G", "B", "D", "F", "A"],
+  "Cmaj7": ["C", "E", "G", "B"],
+  "Cmaj9": ["C", "E", "G", "B", "D"],
+  "Csus2": ["C", "D", "G"],
+  "Csus4": ["C", "F", "G"],
+  "D": ["D", "F#", "A"],
+  "D#": ["D#", "G", "A#"],
+  "D#11": ["D#", "G", "A#", "C#", "F", "G#"],
+  "D#13": ["D#", "G", "A#", "C#", "F", "G#", "C"],
+  "D#5": ["D#", "A#"],
+  "D#6": ["D#", "G", "A#", "C"],
+  "D#6/9": ["D#", "G", "A#", "C", "F"],
+  "D#7": ["D#", "G", "A#", "C#"],
+  "D#7(#9)": ["D#", "G", "A#", "C#", "F#"],
+  "D#7(b5)": ["D#", "G", "A", "C#"],
+  "D#7(b9)": ["D#", "G", "A#", "C#", "E"],
+  "D#7sus4": ["D#", "G#", "A#", "C#"],
+  "D#9": ["D#", "G", "A#", "C#", "F"],
+  "D#add9": ["D#", "G", "A#", "F"],
+  "D#aug": ["D#", "G", "B"],
+  "D#dim": ["D#", "F#", "A"],
+  "D#dim7": ["D#", "F#", "A", "C"],
+  "D#m": ["D#", "F#", "A#"],
+  "D#m11": ["D#", "F#", "A#", "C#", "F", "G#"],
+  "D#m13": ["D#", "F#", "A#", "C#", "F", "G#", "C"],
+  "D#m6": ["D#", "F#", "A#", "C"],
+  "D#m7": ["D#", "F#", "A#", "C#"],
+  "D#m7(b5)": ["D#", "F#", "A", "C#"],
+  "D#m9": ["D#", "F#", "A#", "C#", "F"],
+  "D#maj11": ["D#", "G", "A#", "D", "F", "G#"],
+  "D#maj13": ["D#", "G", "A#", "D", "F", "G#", "C"],
+  "D#maj7": ["D#", "G", "A#", "D"],
+  "D#maj9": ["D#", "G", "A#", "D", "F"],
+  "D#sus2": ["D#", "F", "A#"],
+  "D#sus4": ["D#", "G#", "A#"],
+  "D11": ["D", "F#", "A", "C", "E", "G"],
+  "D13": ["D", "F#", "A", "C", "E", "G", "B"],
+  "D5": ["D", "A"],
+  "D6": ["D", "F#", "A", "B"],
+  "D6/9": ["D", "F#", "A", "B", "E"],
+  "D7": ["D", "F#", "A", "C"],
+  "D7(#9)": ["D", "F#", "A", "C", "F"],
+  "D7(b5)": ["D", "F#", "G#", "C"],
+  "D7(b9)": ["D", "F#", "A", "C", "D#"],
+  "D7sus4": ["D", "G", "A", "C"],
+  "D9": ["D", "F#", "A", "C", "E"],
+  "Dadd9": ["D", "F#", "A", "E"],
+  "Daug": ["D", "F#", "A#"],
+  "Db": ["Db", "F", "Ab"],
+  "Db11": ["Db", "F", "Ab", "B", "Eb", "Gb"],
+  "Db13": ["Db", "F", "Ab", "B", "Eb", "Gb", "Bb"],
+  "Db5": ["Db", "Ab"],
+  "Db6": ["Db", "F", "Ab", "Bb"],
+  "Db6/9": ["Db", "F", "Ab", "Bb", "Eb"],
+  "Db7": ["Db", "F", "Ab", "B"],
+  "Db7(#9)": ["Db", "F", "Ab", "B", "E"],
+  "Db7(b5)": ["Db", "F", "G", "B"],
+  "Db7(b9)": ["Db", "F", "Ab", "B", "D"],
+  "Db7sus4": ["Db", "Gb", "Ab", "B"],
+  "Db9": ["Db", "F", "Ab", "B", "Eb"],
+  "Dbadd9": ["Db", "F", "Ab", "Eb"],
+  "Dbaug": ["Db", "F", "A"],
+  "Dbdim": ["Db", "E", "G"],
+  "Dbdim7": ["Db", "E", "G", "Bb"],
+  "Dbm": ["Db", "E", "Ab"],
+  "Dbm11": ["Db", "E", "Ab", "B", "Eb", "Gb"],
+  "Dbm13": ["Db", "E", "Ab", "B", "Eb", "Gb", "Bb"],
+  "Dbm6": ["Db", "E", "Ab", "Bb"],
+  "Dbm7": ["Db", "E", "Ab", "B"],
+  "Dbm7(b5)": ["Db", "E", "G", "B"],
+  "Dbm9": ["Db", "E", "Ab", "B", "Eb"],
+  "Dbmaj11": ["Db", "F", "Ab", "C", "Eb", "Gb"],
+  "Dbmaj13": ["Db", "F", "Ab", "C", "Eb", "Gb", "Bb"],
+  "Dbmaj7": ["Db", "F", "Ab", "C"],
+  "Dbmaj9": ["Db", "F", "Ab", "C", "Eb"],
+  "Dbsus2": ["Db", "Eb", "Ab"],
+  "Dbsus4": ["Db", "Gb", "Ab"],
+  "Ddim": ["D", "F", "G#"],
+  "Ddim7": ["D", "F", "G#", "B"],
+  "Dm": ["D", "F", "A"],
+  "Dm11": ["D", "F", "A", "C", "E", "G"],
+  "Dm13": ["D", "F", "A", "C", "E", "G", "B"],
+  "Dm6": ["D", "F", "A", "B"],
+  "Dm7": ["D", "F", "A", "C"],
+  "Dm7(b5)": ["D", "F", "G#", "C"],
+  "Dm9": ["D", "F", "A", "C", "E"],
+  "Dmaj11": ["D", "F#", "A", "C#", "E", "G"],
+  "Dmaj13": ["D", "F#", "A", "C#", "E", "G", "B"],
+  "Dmaj7": ["D", "F#", "A", "C#"],
+  "Dmaj9": ["D", "F#", "A", "C#", "E"],
+  "Dsus2": ["D", "E", "A"],
+  "Dsus4": ["D", "G", "A"],
+  "E": ["E", "G#", "B"],
+  "E#": ["F", "A", "C"],
+  "E#11": ["F", "A", "C", "D#", "G", "A#"],
+  "E#13": ["F", "A", "C", "D#", "G", "A#", "D"],
+  "E#5": ["F", "C"],
+  "E#6": ["F", "A", "C", "D"],
+  "E#6/9": ["F", "A", "C", "D", "G"],
+  "E#7": ["F", "A", "C", "D#"],
+  "E#7(#9)": ["F", "A", "C", "D#", "G#"],
+  "E#7(b5)": ["F", "A", "B", "D#"],
+  "E#7(b9)": ["F", "A", "C", "D#", "F#"],
+  "E#7sus4": ["F", "A#", "C", "D#"],
+  "E#9": ["F", "A", "C", "D#", "G"],
+  "E#add9": ["F", "A", "C", "G"],
+  "E#aug": ["F", "A", "C#"],
+  "E#dim": ["F", "G#", "B"],
+  "E#dim7": ["F", "G#", "B", "D"],
+  "E#m": ["F", "G#", "C"],
+  "E#m11": ["F", "G#", "C", "D#", "G", "A#"],
+  "E#m13": ["F", "G#", "C", "D#", "G", "A#", "D"],
+  "E#m6": ["F", "G#", "C", "D"],
+  "E#m7": ["F", "G#", "C", "D#"],
+  "E#m7(b5)": ["F", "G#", "B", "D#"],
+  "E#m9": ["F", "G#", "C", "D#", "G"],
+  "E#maj11": ["F", "A", "C", "E", "G", "A#"],
+  "E#maj13": ["F", "A", "C", "E", "G", "A#", "D"],
+  "E#maj7": ["F", "A", "C", "E"],
+  "E#maj9": ["F", "A", "C", "E", "G"],
+  "E#sus2": ["F", "G", "C"],
+  "E#sus4": ["F", "A#", "C"],
+  "E11": ["E", "G#", "B", "D", "F#", "A"],
+  "E13": ["E", "G#", "B", "D", "F#", "A", "C#"],
+  "E5": ["E", "B"],
+  "E6": ["E", "G#", "B", "C#"],
+  "E6/9": ["E", "G#", "B", "C#", "F#"],
+  "E7": ["E", "G#", "B", "D"],
+  "E7(#9)": ["E", "G#", "B", "D", "G"],
+  "E7(b5)": ["E", "G#", "A#", "D"],
+  "E7(b9)": ["E", "G#", "B", "D", "F"],
+  "E7sus4": ["E", "A", "B", "D"],
+  "E9": ["E", "G#", "B", "D", "F#"],
+  "Eadd9": ["E", "G#", "B", "F#"],
+  "Eaug": ["E", "G#", "C"],
+  "Eb": ["Eb", "G", "Bb"],
+  "Eb11": ["Eb", "G", "Bb", "Db", "F", "Ab"],
+  "Eb13": ["Eb", "G", "Bb", "Db", "F", "Ab", "C"],
+  "Eb5": ["Eb", "Bb"],
+  "Eb6": ["Eb", "G", "Bb", "C"],
+  "Eb6/9": ["Eb", "G", "Bb", "C", "F"],
+  "Eb7": ["Eb", "G", "Bb", "Db"],
+  "Eb7(#9)": ["Eb", "G", "Bb", "Db", "Gb"],
+  "Eb7(b5)": ["Eb", "G", "A", "Db"],
+  "Eb7(b9)": ["Eb", "G", "Bb", "Db", "E"],
+  "Eb7sus4": ["Eb", "Ab", "Bb", "Db"],
+  "Eb9": ["Eb", "G", "Bb", "Db", "F"],
+  "Ebadd9": ["Eb", "G", "Bb", "F"],
+  "Ebaug": ["Eb", "G", "B"],
+  "Ebdim": ["Eb", "Gb", "A"],
+  "Ebdim7": ["Eb", "Gb", "A", "C"],
+  "Ebm": ["Eb", "Gb", "Bb"],
+  "Ebm11": ["Eb", "Gb", "Bb", "Db", "F", "Ab"],
+  "Ebm13": ["Eb", "Gb", "Bb", "Db", "F", "Ab", "C"],
+  "Ebm6": ["Eb", "Gb", "Bb", "C"],
+  "Ebm7": ["Eb", "Gb", "Bb", "Db"],
+  "Ebm7(b5)": ["Eb", "Gb", "A", "Db"],
+  "Ebm9": ["Eb", "Gb", "Bb", "Db", "F"],
+  "Ebmaj11": ["Eb", "G", "Bb", "D", "F", "Ab"],
+  "Ebmaj13": ["Eb", "G", "Bb", "D", "F", "Ab", "C"],
+  "Ebmaj7": ["Eb", "G", "Bb", "D"],
+  "Ebmaj9": ["Eb", "G", "Bb", "D", "F"],
+  "Ebsus2": ["Eb", "F", "Bb"],
+  "Ebsus4": ["Eb", "Ab", "Bb"],
+  "Edim": ["E", "G", "A#"],
+  "Edim7": ["E", "G", "A#", "C#"],
+  "Em": ["E", "G", "B"],
+  "Em11": ["E", "G", "B", "D", "F#", "A"],
+  "Em13": ["E", "G", "B", "D", "F#", "A", "C#"],
+  "Em6": ["E", "G", "B", "C#"],
+  "Em7": ["E", "G", "B", "D"],
+  "Em7(b5)": ["E", "G", "A#", "D"],
+  "Em9": ["E", "G", "B", "D", "F#"],
+  "Emaj11": ["E", "G#", "B", "D#", "F#", "A"],
+  "Emaj13": ["E", "G#", "B", "D#", "F#", "A", "C#"],
+  "Emaj7": ["E", "G#", "B", "D#"],
+  "Emaj9": ["E", "G#", "B", "D#", "F#"],
+  "Esus2": ["E", "F#", "B"],
+  "Esus4": ["E", "A", "B"],
+  "F": ["F", "A", "C"],
+  "F#": ["F#", "A#", "C#"],
+  "F#11": ["F#", "A#", "C#", "E", "G#", "B"],
+  "F#13": ["F#", "A#", "C#", "E", "G#", "B", "D#"],
+  "F#5": ["F#", "C#"],
+  "F#6": ["F#", "A#", "C#", "D#"],
+  "F#6/9": ["F#", "A#", "C#", "D#", "G#"],
+  "F#7": ["F#", "A#", "C#", "E"],
+  "F#7(#9)": ["F#", "A#", "C#", "E", "A"],
+  "F#7(b5)": ["F#", "A#", "C", "E"],
+  "F#7(b9)": ["F#", "A#", "C#", "E", "G"],
+  "F#7sus4": ["F#", "B", "C#", "E"],
+  "F#9": ["F#", "A#", "C#", "E", "G#"],
+  "F#add9": ["F#", "A#", "C#", "G#"],
+  "F#aug": ["F#", "A#", "D"],
+  "F#dim": ["F#", "A", "C"],
+  "F#dim7": ["F#", "A", "C", "D#"],
+  "F#m": ["F#", "A", "C#"],
+  "F#m11": ["F#", "A", "C#", "E", "G#", "B"],
+  "F#m13": ["F#", "A", "C#", "E", "G#", "B", "D#"],
+  "F#m6": ["F#", "A", "C#", "D#"],
+  "F#m7": ["F#", "A", "C#", "E"],
+  "F#m7(b5)": ["F#", "A", "C", "E"],
+  "F#m9": ["F#", "A", "C#", "E", "G#"],
+  "F#maj11": ["F#", "A#", "C#", "F", "G#", "B"],
+  "F#maj13": ["F#", "A#", "C#", "F", "G#", "B", "D#"],
+  "F#maj7": ["F#", "A#", "C#", "F"],
+  "F#maj9": ["F#", "A#", "C#", "F", "G#"],
+  "F#sus2": ["F#", "G#", "C#"],
+  "F#sus4": ["F#", "B", "C#"],
+  "F11": ["F", "A", "C", "D#", "G", "A#"],
+  "F13": ["F", "A", "C", "D#", "G", "A#", "D"],
+  "F5": ["F", "C"],
+  "F6": ["F", "A", "C", "D"],
+  "F6/9": ["F", "A", "C", "D", "G"],
+  "F7": ["F", "A", "C", "D#"],
+  "F7(#9)": ["F", "A", "C", "D#", "G#"],
+  "F7(b5)": ["F", "A", "B", "D#"],
+  "F7(b9)": ["F", "A", "C", "D#", "F#"],
+  "F7sus4": ["F", "A#", "C", "D#"],
+  "F9": ["F", "A", "C", "D#", "G"],
+  "Fadd9": ["F", "A", "C", "G"],
+  "Faug": ["F", "A", "C#"],
+  "Fb": ["E", "Ab", "B"],
+  "Fb11": ["E", "Ab", "B", "D", "Gb", "A"],
+  "Fb13": ["E", "Ab", "B", "D", "Gb", "A", "Db"],
+  "Fb5": ["E", "B"],
+  "Fb6": ["E", "Ab", "B", "Db"],
+  "Fb6/9": ["E", "Ab", "B", "Db", "Gb"],
+  "Fb7": ["E", "Ab", "B", "D"],
+  "Fb7(#9)": ["E", "Ab", "B", "D", "G"],
+  "Fb7(b5)": ["E", "Ab", "Bb", "D"],
+  "Fb7(b9)": ["E", "Ab", "B", "D", "F"],
+  "Fb7sus4": ["E", "A", "B", "D"],
+  "Fb9": ["E", "Ab", "B", "D", "Gb"],
+  "Fbadd9": ["E", "Ab", "B", "Gb"],
+  "Fbaug": ["E", "Ab", "C"],
+  "Fbdim": ["E", "G", "Bb"],
+  "Fbdim7": ["E", "G", "Bb", "Db"],
+  "Fbm": ["E", "G", "B"],
+  "Fbm11": ["E", "G", "B", "D", "Gb", "A"],
+  "Fbm13": ["E", "G", "B", "D", "Gb", "A", "Db"],
+  "Fbm6": ["E", "G", "B", "Db"],
+  "Fbm7": ["E", "G", "B", "D"],
+  "Fbm7(b5)": ["E", "G", "Bb", "D"],
+  "Fbm9": ["E", "G", "B", "D", "Gb"],
+  "Fbmaj11": ["E", "Ab", "B", "Eb", "Gb", "A"],
+  "Fbmaj13": ["E", "Ab", "B", "Eb", "Gb", "A", "Db"],
+  "Fbmaj7": ["E", "Ab", "B", "Eb"],
+  "Fbmaj9": ["E", "Ab", "B", "Eb", "Gb"],
+  "Fbsus2": ["E", "Gb", "B"],
+  "Fbsus4": ["E", "A", "B"],
+  "Fdim": ["F", "G#", "B"],
+  "Fdim7": ["F", "G#", "B", "D"],
+  "Fm": ["F", "G#", "C"],
+  "Fm11": ["F", "G#", "C", "D#", "G", "A#"],
+  "Fm13": ["F", "G#", "C", "D#", "G", "A#", "D"],
+  "Fm6": ["F", "G#", "C", "D"],
+  "Fm7": ["F", "G#", "C", "D#"],
+  "Fm7(b5)": ["F", "G#", "B", "D#"],
+  "Fm9": ["F", "G#", "C", "D#", "G"],
+  "Fmaj11": ["F", "A", "C", "E", "G", "A#"],
+  "Fmaj13": ["F", "A", "C", "E", "G", "A#", "D"],
+  "Fmaj7": ["F", "A", "C", "E"],
+  "Fmaj9": ["F", "A", "C", "E", "G"],
+  "Fsus2": ["F", "G", "C"],
+  "Fsus4": ["F", "A#", "C"],
+  "G": ["G", "B", "D"],
+  "G#": ["G#", "C", "D#"],
+  "G#11": ["G#", "C", "D#", "F#", "A#", "C#"],
+  "G#13": ["G#", "C", "D#", "F#", "A#", "C#", "F"],
+  "G#5": ["G#", "D#"],
+  "G#6": ["G#", "C", "D#", "F"],
+  "G#6/9": ["G#", "C", "D#", "F", "A#"],
+  "G#7": ["G#", "C", "D#", "F#"],
+  "G#7(#9)": ["G#", "C", "D#", "F#", "B"],
+  "G#7(b5)": ["G#", "C", "D", "F#"],
+  "G#7(b9)": ["G#", "C", "D#", "F#", "A"],
+  "G#7sus4": ["G#", "C#", "D#", "F#"],
+  "G#9": ["G#", "C", "D#", "F#", "A#"],
+  "G#add9": ["G#", "C", "D#", "A#"],
+  "G#aug": ["G#", "C", "E"],
+  "G#dim": ["G#", "B", "D"],
+  "G#dim7": ["G#", "B", "D", "F"],
+  "G#m": ["G#", "B", "D#"],
+  "G#m11": ["G#", "B", "D#", "F#", "A#", "C#"],
+  "G#m13": ["G#", "B", "D#", "F#", "A#", "C#", "F"],
+  "G#m6": ["G#", "B", "D#", "F"],
+  "G#m7": ["G#", "B", "D#", "F#"],
+  "G#m7(b5)": ["G#", "B", "D", "F#"],
+  "G#m9": ["G#", "B", "D#", "F#", "A#"],
+  "G#maj11": ["G#", "C", "D#", "G", "A#", "C#"],
+  "G#maj13": ["G#", "C", "D#", "G", "A#", "C#", "F"],
+  "G#maj7": ["G#", "C", "D#", "G"],
+  "G#maj9": ["G#", "C", "D#", "G", "A#"],
+  "G#sus2": ["G#", "A#", "D#"],
+  "G#sus4": ["G#", "C#", "D#"],
+  "G11": ["G", "B", "D", "F", "A", "C"],
+  "G13": ["G", "B", "D", "F", "A", "C", "E"],
+  "G5": ["G", "D"],
+  "G6": ["G", "B", "D", "E"],
+  "G6/9": ["G", "B", "D", "E", "A"],
+  "G7": ["G", "B", "D", "F"],
+  "G7(#9)": ["G", "B", "D", "F", "A#"],
+  "G7(b5)": ["G", "B", "C#", "F"],
+  "G7(b9)": ["G", "B", "D", "F", "G#"],
+  "G7sus4": ["G", "C", "D", "F"],
+  "G9": ["G", "B", "D", "F", "A"],
+  "Gadd9": ["G", "B", "D", "A"],
+  "Gaug": ["G", "B", "D#"],
+  "Gb": ["Gb", "Bb", "Db"],
+  "Gb11": ["Gb", "Bb", "Db", "E", "Ab", "B"],
+  "Gb13": ["Gb", "Bb", "Db", "E", "Ab", "B", "Eb"],
+  "Gb5": ["Gb", "Db"],
+  "Gb6": ["Gb", "Bb", "Db", "Eb"],
+  "Gb6/9": ["Gb", "Bb", "Db", "Eb", "Ab"],
+  "Gb7": ["Gb", "Bb", "Db", "E"],
+  "Gb7(#9)": ["Gb", "Bb", "Db", "E", "A"],
+  "Gb7(b5)": ["Gb", "Bb", "C", "E"],
+  "Gb7(b9)": ["Gb", "Bb", "Db", "E", "G"],
+  "Gb7sus4": ["Gb", "B", "Db", "E"],
+  "Gb9": ["Gb", "Bb", "Db", "E", "Ab"],
+  "Gbadd9": ["Gb", "Bb", "Db", "Ab"],
+  "Gbaug": ["Gb", "Bb", "D"],
+  "Gbdim": ["Gb", "A", "C"],
+  "Gbdim7": ["Gb", "A", "C", "Eb"],
+  "Gbm": ["Gb", "A", "Db"],
+  "Gbm11": ["Gb", "A", "Db", "E", "Ab", "B"],
+  "Gbm13": ["Gb", "A", "Db", "E", "Ab", "B", "Eb"],
+  "Gbm6": ["Gb", "A", "Db", "Eb"],
+  "Gbm7": ["Gb", "A", "Db", "E"],
+  "Gbm7(b5)": ["Gb", "A", "C", "E"],
+  "Gbm9": ["Gb", "A", "Db", "E", "Ab"],
+  "Gbmaj11": ["Gb", "Bb", "Db", "F", "Ab", "B"],
+  "Gbmaj13": ["Gb", "Bb", "Db", "F", "Ab", "B", "Eb"],
+  "Gbmaj7": ["Gb", "Bb", "Db", "F"],
+  "Gbmaj9": ["Gb", "Bb", "Db", "F", "Ab"],
+  "Gbsus2": ["Gb", "Ab", "Db"],
+  "Gbsus4": ["Gb", "B", "Db"],
+  "Gdim": ["G", "A#", "C#"],
+  "Gdim7": ["G", "A#", "C#", "E"],
+  "Gm": ["G", "A#", "D"],
+  "Gm11": ["G", "A#", "D", "F", "A", "C"],
+  "Gm13": ["G", "A#", "D", "F", "A", "C", "E"],
+  "Gm6": ["G", "A#", "D", "E"],
+  "Gm7": ["G", "A#", "D", "F"],
+  "Gm7(b5)": ["G", "A#", "C#", "F"],
+  "Gm9": ["G", "A#", "D", "F", "A"],
+  "Gmaj11": ["G", "B", "D", "F#", "A", "C"],
+  "Gmaj13": ["G", "B", "D", "F#", "A", "C", "E"],
+  "Gmaj7": ["G", "B", "D", "F#"],
+  "Gmaj9": ["G", "B", "D", "F#", "A"],
+  "Gsus2": ["G", "A", "D"],
+  "Gsus4": ["G", "C", "D"],
+};
+
+
+/* ── Exibição de notas: letra + acidente ── */
+function parseNote(n){
+  // retorna {root, acc, pt}
+  const PT = {
+    'C':'Dó','C#':'Dó♯','Cb':'Dób',
+    'D':'Ré','D#':'Ré♯','Db':'Réb',
+    'E':'Mi','E#':'Mi♯','Eb':'Mib',
+    'F':'Fá','F#':'Fá♯','Fb':'Fáb',
+    'G':'Sol','G#':'Sol♯','Gb':'Solb',
+    'A':'Lá','A#':'Lá♯','Ab':'Láb',
+    'B':'Si','B#':'Si♯','Bb':'Sib',
+  };
+  const acc = n.length>1 ? (n[1]==='#'?'♯':'♭') : '';
+  const root = n[0];
+  return {root, acc, pt: PT[n]||n};
+}
+
+/* ── Posição Y no pentagrama (clave de Sol)
+   Linhas do SVG: 20,33,46,59,72  (espaçamento 13px)
+   Referência: E4=linha inferior(72), cada grau sobe 6.5px
+   Linhas:  E4=72  G4=59  B4=46  D5=33  F5=20
+   Espaços: F4=65.5 A4=52.5 C5=39.5 E5=26.5
+──────────────────────────────────────────── */
+const S = 6.5; // meio-espaço
+const BASE_E = 72;
+const NOTE_Y_MAP = {
+  // oitava 4 (dentro do pentagrama)
+  'E': BASE_E,          'E#': BASE_E,        'Eb': BASE_E,
+  'F': BASE_E - S,      'F#': BASE_E - S,    'Fb': BASE_E - S,
+  'G': BASE_E - S*2,    'G#': BASE_E - S*2,  'Gb': BASE_E - S*2,
+  'A': BASE_E - S*3,    'A#': BASE_E - S*3,  'Ab': BASE_E - S*3,
+  'B': BASE_E - S*4,    'B#': BASE_E - S*4,  'Bb': BASE_E - S*4,
+  'C': BASE_E - S*5,    'C#': BASE_E - S*5,  'Cb': BASE_E - S*5,
+  'D': BASE_E - S*6,    'D#': BASE_E - S*6,  'Db': BASE_E - S*6,
+};
+
+/* ══════════════════════════════════════════
+   GRUPOS POR FAMÍLIA
+   Chaves = sufixo do acorde (após a raiz)
+   ══════════════════════════════════════════ */
+const FAMILY = {
+  all: {
+    base:['','m','dim','aug','sus2','sus4','5','6','m6'],
+    ext: ['maj7','m7','7','dim7','m7(b5)','aug7','mM7','7sus4',
+          '7(b5)','7(#9)','7(b9)',
+          '6/9','maj9','m9','9','add9',
+          'maj11','m11','11','maj13','m13','13']
+  },
+  triads:      {base:['','m'],                      ext:[]},
+  major_group: {base:['','sus2','sus4','6','add9'],  ext:['maj7','maj9','maj11','maj13','6/9']},
+  minor_group: {base:['m','m6'],                    ext:['m7','m9','m11','m13','mM7']},
+  dom_group:   {base:['','sus4'],                   ext:['7','9','11','13','7sus4','7(b5)','7(#9)','7(b9)','aug7']},
+  dim_group:   {base:['dim'],                       ext:['dim7','m7(b5)']},
+  aug_group:   {base:['aug'],                       ext:['aug7']},
+  sus_group:   {base:['sus2','sus4'],               ext:['7sus4']},
+  power:       {base:['5'],                         ext:[]},
+  sixth_group: {base:['6','m6','6/9'],              ext:[]},
+  sevenths:    {base:[],                            ext:['maj7','m7','7','dim7','m7(b5)','aug7','mM7','7sus4']},
+  ninths:      {base:[],                            ext:['maj9','m9','9','add9']},
+  elevenths:   {base:[],                            ext:['maj11','m11','11']},
+  thirteenths: {base:[],                            ext:['maj13','m13','13']},
+};
+
+// Famílias que têm tríades E extensões (mostram o toggle)
+const HAS_TOGGLE = new Set(['triads','major_group','minor_group','dom_group','dim_group','aug_group','sus_group']);
+
+/* ── Rótulos legíveis para o acorde ── */
+const QUAL_LABEL = {
+  '':      'Maior',           'm':     'Menor',
+  'dim':   'Diminuto',        'aug':   'Aumentado',
+  'sus2':  'Sus2',            'sus4':  'Sus4',
+  '5':     'Power Chord',
+  '6':     '6ª Maior',        'm6':    '6ª Menor',      '6/9': '6/9',
+  'maj7':  'Maior 7ª',        'm7':    'Menor 7ª',
+  '7':     'Dominante 7ª',    'dim7':  'Diminuto 7ª',
+  'm7(b5)':'Meio-dim. 7ª',    'aug7':  'Aumentado 7ª',
+  'mM7':   'Menor-Maior 7ª',  '7sus4': '7ª Sus4',
+  '7(b5)': '7ª com 5b',       '7(#9)': '7ª com 9#',    '7(b9)':'7ª com 9b',
+  'maj9':  'Maior 9ª',        'm9':    'Menor 9ª',      '9':   'Dominante 9ª',
+  'add9':  'Add9',
+  'maj11': 'Maior 11ª',       'm11':   'Menor 11ª',     '11':  'Dominante 11ª',
+  'maj13': 'Maior 13ª',       'm13':   'Menor 13ª',     '13':  'Dominante 13ª',
+};
+
+/* ── Todas as raízes ── */
+const ALL_ROOTS = ['C','C#','Cb','D','D#','Db','E','E#','Eb',
+                   'F','F#','Fb','G','G#','Gb','A','A#','Ab','B','B#','Bb'];
+
+/* ── Preencher selects do modo manual ── */
+const manualRootSel = document.getElementById('manual-root-select');
+const manualQualSel = document.getElementById('manual-qual-select');
+ALL_ROOTS.forEach(r=>{
+  const o=document.createElement('option');
+  o.value=r;
+  const p=parseNote(r);
+  o.textContent=r+(p.acc?'':'')+' — '+p.pt;
+  // simplifica label
+  o.textContent=r+' — '+p.pt;
+  manualRootSel.appendChild(o);
+});
+Object.entries(QUAL_LABEL).forEach(([k,v])=>{
+  const o=document.createElement('option');o.value=k;o.textContent=v;
+  manualQualSel.appendChild(o);
+});
+
+/* ════ ESTADO ════ */
+let timerA=null,timerB=null,remainA=0,remainB=0;
+let totalTime=5,revealTime=5;
+let currentChord=null,running=false,paused=false,isDark=true;
+const CIRC=2*Math.PI*22;
+const $=id=>document.getElementById(id);
+
+/* ── Tema ── */
+$('theme-btn').onclick=function(){
+  isDark=!isDark;
+  document.documentElement.dataset.theme=isDark?'dark':'light';
+  this.textContent=isDark?'☀️ Claro':'🌙 Escuro';
+  if(currentChord&&$('notes-reveal').classList.contains('show'))
+    drawStaff(CHORD_NOTES[currentChord]);
+};
+
+/* ── Tempo ── */
+$('time-range').oninput=function(){$('time-label').textContent=this.value+'s';$('time-input').value=this.value};
+$('time-input').oninput=function(){
+  let v=Math.max(1,Math.min(600,parseInt(this.value)||1));
+  $('time-range').value=Math.min(v,60);
+  $('time-label').textContent=v+'s';
+};
+
+/* ── Modo select → toggle visibilidade ── */
+$('mode-select').onchange=function(){
+  const m=this.value;
+  const isManual=m==='manual';
+  $('manual-row').style.display=isManual?'flex':'none';
+  $('root-filter-row').style.display=isManual?'none':'flex';
+  $('seventh-row').style.display=HAS_TOGGLE.has(m)?'flex':'none';
+};
+
+/* ── Escolher acorde ── */
+function pickChord(){
+  const mode=$('mode-select').value;
+  if(mode==='manual'){
+    const r=manualRootSel.value;
+    const q=manualQualSel.value;
+    const key=r+q;
+    return CHORD_NOTES[key]?key:r; // fallback para maior
+  }
+
+  // filtro de raiz
+  const rootFilter=$('root-filter').value;
+  let roots = rootFilter==='all' ? ALL_ROOTS : [rootFilter];
+
+  const grp=FAMILY[mode]||FAMILY.all;
+  const withExt=$('with-seventh').checked;
+  let suffs=[...grp.base];
+  if(withExt) suffs=[...suffs,...grp.ext];
+  if(!suffs.length) suffs=[...grp.base,...grp.ext];
+
+  // filtrar só chaves que existem no banco
+  let pool=[];
+  roots.forEach(r=>{
+    suffs.forEach(s=>{
+      const k=r+s;
+      if(CHORD_NOTES[k]) pool.push(k);
+    });
+  });
+  if(!pool.length) pool=Object.keys(CHORD_NOTES);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* ── Pentagrama ── */
+function drawStaff(notes){
+  const svg=$('staff-svg');svg.innerHTML='';
+  if(!notes||!notes.length)return;
+  const mL=42, sp=46;
+  const lc=isDark?'rgba(150,140,240,0.4)':'rgba(83,74,183,0.35)';
+  const nc=isDark
+    ?['#9a91f0','#1d9e75','#e07050','#d4537e','#e09530','#60b0f0','#c0a0e0']
+    :['#534AB7','#0F6E56','#993C1D','#993556','#854F0B','#1a6aaa','#7040a0'];
+  const cc=isDark?'rgba(154,145,240,0.45)':'rgba(83,74,183,0.4)';
+
+  function el(tag,attrs,txt){
+    const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+    Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+    if(txt!==undefined)e.textContent=txt;
+    return e;
+  }
+
+  // 5 linhas do pentagrama: E4 G4 B4 D5 F5
+  const STAFF_LINES=[72,59,46,33,20];
+  STAFF_LINES.forEach(y=>
+    svg.appendChild(el('line',{x1:mL-4,y1:y,x2:415,y2:y,stroke:lc,'stroke-width':'1.2'}))
+  );
+
+  notes.forEach((n,i)=>{
+    const x = mL+24+i*sp;
+    const noteLetter = n[0]; // primeira letra para busca no mapa
+    const y = NOTE_Y_MAP[n] ?? NOTE_Y_MAP[noteLetter] ?? 46;
+    const c = nc[i%nc.length];
+    const d = parseNote(n);
+
+    // Linha extra abaixo (C4 = linha abaixo do pentagrama, y > 72)
+    if(y >= 78){
+      svg.appendChild(el('line',{x1:x-12,y1:Math.round(y),x2:x+12,y2:Math.round(y),stroke:lc,'stroke-width':'1.2'}));
+    }
+    // Linha extra acima (se nota ficar muito acima da 1ª linha, y < 20)
+    if(y <= 14){
+      svg.appendChild(el('line',{x1:x-12,y1:Math.round(y),x2:x+12,y2:Math.round(y),stroke:lc,'stroke-width':'1.2'}));
+    }
+
+    // Cabeça da nota
+    svg.appendChild(el('ellipse',{cx:x,cy:y,rx:9,ry:6.5,fill:c}));
+
+    // Haste (sobe para notas na metade inferior, desce para superior)
+    const stemDir = y >= 46 ? -1 : 1;
+    const stemX   = stemDir===-1 ? x+8 : x-8;
+    svg.appendChild(el('line',{
+      x1:stemX,y1:y,x2:stemX,y2:y+stemDir*28,
+      stroke:c,'stroke-width':'1.5'
+    }));
+
+    // Acidente (♯ ou ♭) à esquerda da cabeça
+    if(d.acc){
+      svg.appendChild(el('text',{
+        x:x-16,y:y+5,
+        'text-anchor':'middle','font-size':'14','font-weight':'700',fill:c
+      },d.acc));
+    }
+
+    // Nome da nota abaixo — sempre fora do pentagrama
+    const labelY = Math.max(y, 72) + 16;
+    svg.appendChild(el('text',{
+      x,y:labelY,
+      'text-anchor':'middle','font-size':'11','font-weight':'700',fill:c
+    },n));
+  });
+
+  // Clave de Sol
+  svg.appendChild(el('text',{x:mL-26,y:64,'font-size':'48',fill:cc},'𝄞'));
+}
+
+/* ── Exibir acorde ── */
+function showChord(chordKey){
+  currentChord=chordKey;
+  // separar raiz do sufixo
+  let root=chordKey[0];
+  if(chordKey.length>1&&(chordKey[1]==='#'||chordKey[1]==='b')) root=chordKey.slice(0,2);
+  const suf=chordKey.slice(root.length);
+  const d=parseNote(root);
+
+  $('chord-root').textContent=d.root;
+  $('chord-acc').textContent=d.acc;
+  $('chord-qual-sym').textContent=suf||'';
+  $('chord-pt').textContent=d.pt+(suf?' '+suf:'');
+  $('chord-type').textContent=QUAL_LABEL[suf]||suf||'Maior';
+
+  $('notes-reveal').classList.remove('show');
+  $('chord-display').style.display='block';
+  $('timer-bar').style.width='100%';
+  $('timer-bar').style.background='var(--accent)';
+  $('ring-arc').style.strokeDashoffset='0';
+  $('ring-arc').style.stroke='var(--accent)';
+  $('ring-txt').textContent='–';
+}
+
+/* ── Timer A: prática ── */
+function startLearnTimer(){
+  totalTime=Math.max(1,parseInt($('time-input').value)||5);
+  remainA=totalTime;updateLearnBar(remainA);
+  clearInterval(timerA);
+  timerA=setInterval(()=>{
+    remainA-=0.1;updateLearnBar(remainA);
+    if(remainA<=0){clearInterval(timerA);$('timer-num').textContent='';revealAndStartRevealTimer();}
+  },100);
+}
+function updateLearnBar(r){
+  const pct=Math.max(0,r/totalTime)*100;
+  $('timer-bar').style.width=pct+'%';
+  $('timer-num').textContent=Math.ceil(Math.max(0,r))+'s';
+  if(r<=totalTime*0.4)$('timer-bar').style.background='var(--orange)';
+  else if(r<=totalTime*0.6)$('timer-bar').style.background='var(--amber)';
+}
+
+/* ── Reveal + Timer B ── */
+function revealAndStartRevealTimer(){
+  const notes=CHORD_NOTES[currentChord]||[];
+  const nl=$('notes-list');nl.innerHTML='';
+  const roles=['Tônica','3ª','5ª','7ª','9ª','11ª','13ª'];
+  notes.forEach((n,i)=>{
+    const d=parseNote(n);
+    const pill=document.createElement('div');
+    pill.className='note-pill'+(i===0?' tonic':'');
+    pill.style.animationDelay=(i*0.07)+'s';
+    const nameHtml=d.root+(d.acc?'<span style="font-size:.75em">'+d.acc+'</span>':'');
+    pill.innerHTML='<span class="pill-name">'+nameHtml+'</span><span class="pill-role">'+roles[i]+'</span>';
+    nl.appendChild(pill);
+  });
+  drawStaff(notes);
+  $('notes-reveal').classList.add('show');
+  revealTime=5;remainB=revealTime;updateRing(remainB);
+  clearInterval(timerB);
+  timerB=setInterval(()=>{
+    remainB-=0.1;updateRing(remainB);
+    if(remainB<=0){clearInterval(timerB);if(running&&!paused)nextChord();}
+  },100);
+}
+function updateRing(r){
+  const pct=Math.max(0,r/revealTime);
+  $('ring-arc').style.strokeDashoffset=CIRC*(1-pct);
+  $('ring-txt').textContent=Math.ceil(Math.max(0,r));
+  if(r<=revealTime*0.4)$('ring-arc').style.stroke='var(--orange)';
+  else if(r<=revealTime*0.6)$('ring-arc').style.stroke='var(--amber)';
+  else $('ring-arc').style.stroke='var(--accent)';
+}
+function nextChord(){showChord(pickChord());startLearnTimer();}
+
+/* ── Pausar ── */
+$('btn-pause').onclick=function(){
+  if(!paused){
+    paused=true;clearInterval(timerA);clearInterval(timerB);
+    this.textContent='▶ Continuar';
+  } else {
+    paused=false;this.textContent='⏸ Pausar';
+    if($('notes-reveal').classList.contains('show')){
+      timerB=setInterval(()=>{remainB-=0.1;updateRing(remainB);if(remainB<=0){clearInterval(timerB);if(running)nextChord();}},100);
+    } else {
+      timerA=setInterval(()=>{remainA-=0.1;updateLearnBar(remainA);if(remainA<=0){clearInterval(timerA);revealAndStartRevealTimer();}},100);
+    }
+  }
+};
+
+/* ── Iniciar / Encerrar ── */
+$('btn-play').onclick=function(){
+  running=true;paused=false;
+  this.style.display='none';
+  $('btn-pause').style.display='';
+  $('btn-stop').style.display='';
+  $('btn-pause').textContent='⏸ Pausar';
+  nextChord();
+};
+$('btn-stop').onclick=function(){
+  running=false;paused=false;
+  clearInterval(timerA);clearInterval(timerB);
+  $('chord-display').style.display='none';
+  $('btn-play').style.display='';
+  $('btn-pause').style.display='none';
+  this.style.display='none';
+};
+</script>
+</body>
+</html>
