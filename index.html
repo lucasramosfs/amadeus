@@ -158,6 +158,7 @@
     </div>
     <div class="btn-row">
       <button class="primary" id="btn-play">▶ Iniciar</button>
+      <button id="btn-pause" style="display:none">⏸ Pausar</button>
       <button class="danger" id="btn-stop" style="display:none">■ Encerrar</button>
     </div>
   </div>
@@ -202,6 +203,15 @@
 
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
+document.getElementById('btn-pause').onclick = function(){
+  if(!paused){
+    pauseTimers();
+    this.textContent = '▶ Continuar';
+  } else {
+    resumeTimers();
+    this.textContent = '⏸ Pausar';
+  }
+};
 
 const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_PT={'C':'Dó','C#':'Dó#','D':'Ré','D#':'Ré#','E':'Mi','F':'Fá',
@@ -229,10 +239,27 @@ const SYMS={'major':'','minor':'m','dim':'°','aug':'+','sus2':'sus2','sus4':'su
   'major7':'maj7','minor7':'m7','dom7':'7','dim7':'°7','half-dim7':'ø7',
   'aug7':'+7','major9':'maj9','minor9':'m9','add9':'add9','6':'6','minor6':'m6'};
 const MODE_KEYS={all:Object.keys(QUALITIES),major:['major'],minor:['minor'],dom7:['dom7']};
-const NOTE_Y={'C':82,'C#':82,'D':75,'D#':68,'E':68,'F':61,'F#':55,
-  'G':55,'G#':48,'A':48,'A#':42,'B':35};
+const BASE = 72; // linha inferior (E)
+const STEP = 6.5; // metade do espaço
+
+const NOTE_Y = {
+  'E': BASE,
+  'F': BASE - STEP,
+  'G': BASE - STEP*2,
+  'A': BASE - STEP*3,
+  'B': BASE - STEP*4,
+  'C': BASE - STEP*5,
+  'D': BASE - STEP*6,
+
+  'C#': BASE - STEP*5,
+  'D#': BASE - STEP*6,
+  'F#': BASE - STEP,
+  'G#': BASE - STEP*2,
+  'A#': BASE - STEP*3
+};
 const CIRC=2*Math.PI*22; // ~138.2
 
+let paused = false;
 let timerA=null, timerB=null, remainA=0, remainB=0;
 let totalTime=10, revealTime=0;
 let currentChord=null, running=false, isDark=true;
@@ -270,6 +297,42 @@ $('time-input').oninput=function(){
 $('mode-select').onchange=function(){
   $('manual-row').style.display=this.value==='manual'?'flex':'none';
 };
+
+function pauseTimers(){
+  paused = true;
+  clearInterval(timerA);
+  clearInterval(timerB);
+}
+
+function resumeTimers(){
+  paused = false;
+
+  // Se ainda está no tempo de aprendizado
+  if(remainA > 0 && !document.getElementById('notes-reveal').classList.contains('show')){
+    timerA = setInterval(()=>{
+      remainA -= 0.1;
+      updateLearnBar(remainA);
+
+      if(remainA <= 0){
+        clearInterval(timerA);
+        revealAndStartRevealTimer();
+      }
+    },100);
+  }
+
+  // Se já está no tempo de revelação
+  else if(remainB > 0){
+    timerB = setInterval(()=>{
+      remainB -= 0.1;
+      updateRing(remainB);
+
+      if(remainB <= 0){
+        clearInterval(timerB);
+        if(running) nextChord();
+      }
+    },100);
+  }
+}
 
 /* ---- chord logic ---- */
 function pickChord(){
@@ -358,7 +421,7 @@ function revealAndStartRevealTimer(){
   const nl=document.getElementById('notes-list');
   nl.innerHTML='';
 
-  const roles=['Tônica','3ª','5ª','7ª','9ª','11ª','13ª'];
+  const roles=['T','3ª','5ª','7ª','9ª','11ª','13ª'];
 
   notes.forEach((n,i)=>{
     const pill=document.createElement('div');
@@ -406,16 +469,27 @@ function nextChord(){
 /* ---- buttons ---- */
 $('btn-play').onclick=function(){
   running=true;
+  paused=false;
+
   this.style.display='none';
   $('btn-stop').style.display='';
+  $('btn-pause').style.display='';
+  $('btn-pause').textContent='⏸ Pausar';
+
   nextChord();
 };
 
 $('btn-stop').onclick=function(){
   running=false;
-  clearInterval(timerA); clearInterval(timerB);
+  paused=false;
+
+  clearInterval(timerA);
+  clearInterval(timerB);
+
   $('chord-display').style.display='none';
+
   $('btn-play').style.display='';
+  $('btn-pause').style.display='none';
   this.style.display='none';
 };
 </script>
