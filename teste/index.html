@@ -71,8 +71,8 @@
   #timer-num{font-size:12px;color:var(--text2);margin-bottom:1rem}
   .notes-reveal{display:none}
   .notes-reveal.show{display:block}
-  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
-  .note-pill{padding:7px 14px;border-radius:20px;text-align:center;background:var(--pill-bg);color:var(--pill-text);animation:popIn .3s ease both;min-width:52px}
+  #notes-list{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
+  .note-pill{padding:7px 14px;border-radius:20px;font-size:20px;text-align:center;background:var(--pill-bg);color:var(--pill-text);animation:popIn .3s ease both;min-width:15%}
   .note-pill.tonic{background:var(--accent);color:#fff}
   .pill-name{font-size:18px;font-weight:700;display:block;line-height:1.2}
   .pill-role{font-size:10px;opacity:.6;display:block;margin-top:2px}
@@ -1113,7 +1113,7 @@ function updateLearnBar(r){
 function revealAndStartRevealTimer(){
   const notes=CHORD_NOTES[currentChord]||[];
   const nl=$('notes-list');nl.innerHTML='';
-  const roles=['Tônica','3ª','5ª','7ª','9ª','11ª','13ª'];
+  const roles=['T','3ª','5ª','7ª','9ª','11ª','13ª'];
   notes.forEach((n,i)=>{
     const d=parseNote(n);
     const pill=document.createElement('div');
